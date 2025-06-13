@@ -1,17 +1,23 @@
-# Check if the remote ssh is running, if not, start the remote ssh
-$sshService = Get-Service -Name "sshd" -ErrorAction SilentlyContinue
-if ($null -eq $sshService) {
-    Write-Host "Remote SSH service is not installed. Installing..."
-    Install-WindowsFeature -Name OpenSSH.Server
-    Start-Service sshd
-    Write-Host "Remote SSH service started."
-} else {
-    if ($sshService.Status -ne 'Running') {
-        Start-Service sshd
-        Write-Host "Remote SSH service started."
+# Define the path to the VS Code tunnel executable
+$codeTunnelExePath = "C:\Users\Admin\.vscode\cli\code.exe"
+
+# Check if the VS Code tunnel is running by checking for the pid.txt file
+$pidFilePath = "C:\Users\Admin\.vscode\cli\servers\Stable-dfaf44141ea9deb3b4096f7cd6d24e00c147a4b1\pid.txt"
+if (Test-Path $pidFilePath) {
+    $botPid = Get-Content $pidFilePath
+    if (Get-Process -Id $botPid -ErrorAction SilentlyContinue) {
+        Write-Host "VS Code tunnel is running (PID: $botPid)."
     } else {
-        Write-Host "Remote SSH service is already running."
+        Write-Host "VS Code tunnel pid.txt exists but process is not running. Attempting to start..."
+        Start-Process -FilePath $codeTunnelExePath -ArgumentList "tunnel --accept-server-license-terms --log info --name pigletaccess --parent-process-id $botPid" -NoNewWindow
+        Write-Host "VS Code tunnel started."
+        Start-Sleep -Seconds 5
     }
+} else {
+    Write-Host "VS Code tunnel is not running. Attempting to start..."
+    Start-Process -FilePath $codeTunnelExePath -ArgumentList "tunnel --accept-server-license-terms --log info --name pigletaccess --parent-process-id $botPid" -NoNewWindow
+    Write-Host "VS Code tunnel started."
+    Start-Sleep -Seconds 5
 }
 
 # Activate python virtual environment

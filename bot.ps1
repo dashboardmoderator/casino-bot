@@ -1,13 +1,18 @@
-# This script sets the default shell for OpenSSH to PowerShell 7
-
-$regPath = "HKLM:\SOFTWARE\OpenSSH"
-$propertyName = "DefaultShell"
-$propertyValue = "C:\Program Files\PowerShell\7\pwsh.exe"
-
-# Set the DefaultShell property in the OpenSSH registry key
-New-ItemProperty -Path $regPath -Name $propertyName -Value $propertyValue -PropertyType String -Force
-
-Write-Host "DefaultShell set to $propertyValue in $regPath"
+# Check if the remote ssh is running, if not, start the remote ssh
+$sshService = Get-Service -Name "sshd" -ErrorAction SilentlyContinue
+if ($null -eq $sshService) {
+    Write-Host "Remote SSH service is not installed. Installing..."
+    Install-WindowsFeature -Name OpenSSH.Server
+    Start-Service sshd
+    Write-Host "Remote SSH service started."
+} else {
+    if ($sshService.Status -ne 'Running') {
+        Start-Service sshd
+        Write-Host "Remote SSH service started."
+    } else {
+        Write-Host "Remote SSH service is already running."
+    }
+}
 
 # Activate python virtual environment
 $venvPath = "C:\Users\Admin\Documents\GitHub\casino-bot\venv\Scripts\Activate.ps1"
